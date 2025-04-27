@@ -1,0 +1,128 @@
+#!/bin/bash
+
+# chkconfig: 35 80 10
+
+# description: Oracle auto start-stop script.
+
+# Set ORACLE_HOME to be equivalent to the $ORACLE_HOME
+
+# from which you wish to execute dbstart and dbshut;
+
+# Set ORACLE_USER to the user id of the user of the
+
+# Oracle database in ORACLE_HOME.
+
+ORACLE_HOME=/data/u01/app/oracle/product/11.2.0/dbhome_1
+
+ORACLE_USER=oracle
+
+if [ ! -f $ORACLE_HOME/bin/dbstart ];then
+
+         echo "Oracle startup: cannot start"
+
+         exit
+
+fi
+
+case "$1" in
+
+'start')
+
+# Start the Oracle database:
+
+echo "Starting Oracle Database ... "
+
+echo "-----------------------------------------" >> /var/log/oracle
+
+date +" %T %a %D : Start Oracle Database as part of system up." >> /var/log/oracle
+
+echo "-----------------------------------------" >> /var/log/oracle
+
+su - $ORACLE_USER -c "$ORACLE_HOME/bin/dbstart" >> /var/log/oracle
+
+echo "Done"
+
+# Start the Listener:
+
+echo "Starting Oracle Listeners ... "
+
+echo "----------------------------------------" >> /var/log/oracle
+
+date +" %T %a %D : Starting Oracle Listeners as part of system up." >> /var/log/oracle
+
+echo "----------------------------------------" >> /var/log/oracle
+
+su - $ORACLE_USER -c "$ORACLE_HOME/bin/lsnrctl start" >> /var/log/oracle
+
+echo "Done."
+
+echo "-------------------------------------------------" >> /var/log/oracle
+
+date +" %T %a %D : Finished." >> /var/log/oracle
+
+echo "-------------------------------------------------" >> /var/log/oracle
+
+touch /var/lock/subsys/oracle
+
+;;
+
+'stop')
+
+# Stop the Oracle Listener:
+
+echo "Stoping Oracle Listeners ... "
+
+echo "-------------------------------------------------" >> /var/log/oracle
+
+date +" %T %a %D : Stoping Oracle Listener as part of system down." >> /var/log/oracle
+
+echo "-------------------------------------------------" >> /var/log/oracle
+
+su - $ORACLE_USER -c "$ORACLE_HOME/bin/lsnrctl stop" >>/var/log/oracle
+
+echo "Done."
+
+rm -f /var/lock/subsys/oracle
+
+# Stop the Oracle Database:
+
+echo "Stoping Oracle Databases ... "
+
+echo "-------------------------------------------------" >> /var/log/oracle
+
+date +" %T %a %D : Stoping Oracle Databases as part of system down." >> /var/log/oracle
+
+echo "-------------------------------------------------" >> /var/log/oracle
+
+su - $ORACLE_USER -c "$ORACLE_HOME/bin/dbshut" >>/var/log/oracle
+
+echo "Done."
+
+echo ""
+
+echo "-------------------------------------------------" >> /var/log/oracle
+
+date +" %T %a %D : Finished." >> /var/log/oracle
+
+echo "-------------------------------------------------" >> /var/log/oracle
+
+;;
+
+'status')
+if [ -f /var/lock/subsys/oracle ];then
+    echo "Oracle Database is running."
+else
+    echo "Oracle Database is stop."
+fi
+
+;;
+
+'restart')
+
+$0 stop
+
+$0 start
+
+;;
+
+esac
